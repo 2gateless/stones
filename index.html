@@ -209,13 +209,36 @@ async function analyze() {
     const apiKey = localStorage.getItem('rock_api_key');
     if(!apiKey) { showErr('API 키를 먼저 입력하고 저장해 주세요.'); btn.textContent='🔍 암석 분석하기'; btn.disabled=false; return; }
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    let modelName = localStorage.getItem('rock_model_name');
+    if (!modelName) {
+      btn.textContent='🔍 사용 가능한 모델 확인 중...';
+      const mRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+      if (!mRes.ok) throw new Error('API 키 검증 실패 또는 모델 목록을 가져올 수 없습니다.');
+      const mData = await mRes.json();
+      const models = (mData.models || []).map(m => m.name.replace('models/', ''));
+      
+      const preferred = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-pro', 'gemini-1.0-pro-vision'];
+      for (const p of preferred) {
+        if (models.includes(p)) { modelName = p; break; }
+      }
+      if (!modelName) modelName = models.find(m => m.includes('vision') || m.includes('1.5')) || models.find(m => m.includes('gemini'));
+      if (!modelName) throw new Error('지원되는 Gemini 모델이 없습니다. 허용된 모델: ' + models.join(', '));
+      
+      localStorage.setItem('rock_model_name', modelName);
+    }
+
+    btn.textContent='🔍 분석 중...';
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents })
     });
 
-    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`HTTP ${res.status}`);}
+    if(!res.ok){
+      if (res.status === 404) localStorage.removeItem('rock_model_name');
+      const e=await res.json().catch(()=>({}));
+      throw new Error((e?.error?.message||`HTTP ${res.status}`) + ` (선택된 모델: ${modelName})`);
+    }
     const data=await res.json();
     const txt=data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const d=JSON.parse(txt.replace(/```json|```/g,'').trim());

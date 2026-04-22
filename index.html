@@ -209,7 +209,7 @@ async function analyze() {
     const apiKey = localStorage.getItem('rock_api_key');
     if(!apiKey) { showErr('API 키를 먼저 입력하고 저장해 주세요.'); btn.textContent='🔍 암석 분석하기'; btn.disabled=false; return; }
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash:generateContent?key=${apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents })

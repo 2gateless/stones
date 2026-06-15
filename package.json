@@ -1,0 +1,13 @@
+{
+  "name": "stone-explorer",
+  "version": "1.0.0",
+  "description": "산행 암석 탐구 PWA 웹 애플리케이션",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
